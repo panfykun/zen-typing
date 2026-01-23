@@ -403,25 +403,59 @@
 
         // ローマ字変換パターン
         let romajiPatterns = {
-            "し": ["shi", "si"],
-            "ち": ["chi", "ti"],
-            "つ": ["tsu", "tu"],
+            "い": ["i", "yi"],
+            "か": ["ka", "ca"], "く": ["ku", "cu", "qu"], "こ": ["ko", "co"],
+            "し": ["shi", "si", "ci"], "せ": ["se", "ce"],
+            "ち": ["chi", "ti"], "つ": ["tsu", "tu"],
             "ふ": ["fu", "hu"],
             "じ": ["ji", "zi"],
-            "しゃ": ["sha", "sya"],　"しゅ": ["shu", "syu"],　"しょ": ["sho", "syo"],
-            "ちゃ": ["cha", "tya"],　"ちゅ": ["chu", "tyu"],　"ちょ": ["cho", "tyo"],
-            "じゃ": ["ja", "jya", "zya"],　"じゅ": ["ju", "jyu", "zyu"],　"じょ": ["jo", "jyo", "zyo"],
+            "きゃ": ["kya", "kixya", "kilya"], "きゅ": ["kyu", "kixyu", "kilyu"], "きょ": ["kyo", "kixyo", "kilyo"],
+            "ぎゃ": ["gya", "gixya", "gilya"], "ぎゅ": ["gyu", "gixyu", "gilyu"], "ぎょ": ["gyo", "gixyo", "gilyo"],
+            "にゃ": ["nya", "nixya", "nilya"], "にゅ": ["nyu", "nixyu", "nilyu"], "にょ": ["nyo", "nixyo", "nilyo"],
+            "ひゃ": ["hya", "hixya", "hilya"], "ひゅ": ["hyu", "hixyu", "hilyu"], "ひょ": ["hyo", "hixyo", "hilyo"],
+            "びゃ": ["bya", "bixya", "bilya"], "びゅ": ["byu", "bixyu", "bilyu"], "びょ": ["byo", "bixyo", "bilyo"],
+            "ぴゃ": ["pya", "pixya", "pilya"], "ぴゅ": ["pyu", "pixyu", "pilyu"], "ぴょ": ["pyo", "pixyo", "pilyo"],
+            "みゃ": ["mya", "mixya", "milya"], "みゅ": ["myu", "mixyu", "milyu"], "みょ": ["myo", "mixyo", "milyo"],
+            "りゃ": ["rya", "rixya", "rilya"], "りゅ": ["ryu", "rixyu", "rilyu"], "りょ": ["ryo", "rixyo", "rilyo"],
+            "しゃ": ["sha", "sya", "shixya", "shilya", "sixya", "silya", "cixya", "cilya"],
+            "しゅ": ["shu", "syu", "shixyu", "shilyu", "sixyu", "silyu", "cixyu", "cilyu"],
+            "しょ": ["sho", "syo", "shixyo", "shilyo", "sixyo", "silyo", "cixyo", "cilyo"],
+            "しぇ": ["she", "sye", "shixe", "shile", "sixe", "sile", "cixe", "cile"],
+            "じゃ": ["ja", "jya", "zya", "jixya", "jilya", "zixya", "zilya"],
+            "じゅ": ["ju", "jyu", "zyu", "jixya", "jilya", "zixya", "zilya"],
+            "じょ": ["jo", "jyo", "zyo", "jixya", "jilya", "zixya", "zilya"],
+            "じぇ": ["je", "jye", "zye", "jixe", "jile", "zixe", "zile"],
+            "ちゃ": ["cha", "cya", "tya", "chixya", "chiilya", "tixya", "tilya"],
+            "ちゅ": ["chu", "cyu", "tyu", "chixyu", "chiilyu", "tixyu", "tilyu"],
+            "ちょ": ["cho", "cyo", "tyo", "chixyo", "chiilyo", "tixyo", "tilyo"],
+            "ちぇ": ["che", "cye", "tye", "chixe", "chiile", "tixe", "tile"],
+            "うぃ": ["wi", "whi", "uxi", "uli", "uxyi", "ulyi"],
+            "うぇ": ["we", "whe", "uxe", "ule"],
+            "うぉ": ["who", "uxo", "ulo"],
+            "ふぁ": ["fa", "fwa", "fuxa", "fula", "huxa", "hula"],
+            "ふぃ": ["fi", "fwi", "fuxi", "fuli", "fuxyi", "fulyi", "huxi", "huli", "huxyi", "hulyi"],
+            "ふぇ": ["fe", "fwe", "fuxe", "fule", "huxe", "hule"],
+            "ふぉ": ["fo", "fwo", "fuxo", "fulo", "huxo", "hulo"],
+            "つぁ": ["tsa", "tsuxa", "tsula", "tuxa", "tula"],
+            "つぃ": ["tsi", "tsuxi", "tsuli", "tsuxyi", "tsulyi", "tuxi", "tuli", "tuxyi", "tulyi"],
+            "つぇ": ["tse", "tsuxe", "tsule", "tuxe", "tule"],
+            "つぉ": ["tso", "tsuxo", "tsulo", "tuxo", "tulo"],
+            "てぃ": ["thi", "texi", "teli", "texyi", "telyi"],
+            "とぅ": ["twu", "toxu", "tolu"],
+            "どぅ": ["dwu", "doxu", "dolu"],
             "ん": ["n", "nn", "xn"],
-            "んあ": ["nna", "xna"], "んい": ["nni", "xni"], "んう": ["nnu", "xnu"], "んえ": ["nne", "xne"], "んお": ["nno", "xno"],
+            "んあ": ["nna", "xna"], "んい": ["nni", "xni", "nnyi", "xnyi"], "んう": ["nnu", "xnu"], "んえ": ["nne", "xne"], "んお": ["nno", "xno"],
             "んな": ["nnna", "xnna"], "んに": ["nnni", "xnni"], "んぬ": ["nnnu", "xnnu"], "んね": ["nnne", "xnne"], "んの": ["nnno", "xnno"],
             "んや": ["nnya", "xnya"], "んゆ": ["nnyu", "xnyu"], "んよ": ["nnyo", "xnyo"],
-            "んにゃ": ["nnnya", "xnnya"], "んにゅ": ["nnnyu", "xnnyu"], "んにょ": ["nnnyo", "xnnyo"],
+            "んにゃ": ["nnnya", "xnnya", "nnnixya", "xnnixya", "nnnilya", "xnnilya"],
+            "んにゅ": ["nnnyu", "xnnyu", "nnnixyu", "xnnixyu", "nnnilyu", "xnnilyu"],
+            "んにょ": ["nnnyo", "xnnyo", "nnnixyo", "xnnixyo", "nnnilyo", "xnnilyo"],
         };
 
         const basicRomaji = {
-            "あ": "a", "い": "i", "う": "u", "え": "e", "お": "o",
-            "か": "ka", "き": "ki", "く": "ku", "け": "ke", "こ": "ko",
-            "さ": "sa", "す": "su", "せ": "se", "そ": "so",
+            "あ": "a", "う": "u", "え": "e", "お": "o",
+            "き": "ki","け": "ke",
+            "さ": "sa", "す": "su", "そ": "so",
             "た": "ta", "て": "te", "と": "to",
             "な": "na", "に": "ni", "ぬ": "nu", "ね": "ne", "の": "no",
             "は": "ha", "ひ": "hi", "へ": "he", "ほ": "ho",
@@ -429,21 +463,13 @@
             "や": "ya", "ゆ": "yu", "よ": "yo",
             "ら": "ra", "り": "ri", "る": "ru", "れ": "re", "ろ": "ro",
             "わ": "wa", "を": "wo",
+            "ゔ": "vu", // 環境依存文字であるため、カタカナの「ヴ」を使った方がいいかも？
             "が": "ga", "ぎ": "gi", "ぐ": "gu", "げ": "ge", "ご": "go",
             "ざ": "za", "ず": "zu", "ぜ": "ze", "ぞ": "zo",
-            "だ": "da", "で": "de", "ど": "do",
+            "だ": "da", "ぢ": "di", "で": "de", "ど": "do",
             "ば": "ba", "び": "bi", "ぶ": "bu", "べ": "be", "ぼ": "bo",
             "ぱ": "pa", "ぴ": "pi", "ぷ": "pu", "ぺ": "pe", "ぽ": "po",
-            "きゃ": "kya", "きゅ": "kyu", "きょ": "kyo",
-            "ぎゃ": "gya", "ぎゅ": "gyu", "ぎょ": "gyo",
-            "にゃ": "nya", "にゅ": "nyu", "にょ": "nyo",
-            "ひゃ": "hya", "ひゅ": "hyu", "ひょ": "hyo",
-            "びゃ": "bya", "びゅ": "byu", "びょ": "byo",
-            "ぴゃ": "pya", "ぴゅ": "pyu", "ぴょ": "pyo",
-            "みゃ": "mya", "みゅ": "myu", "みょ": "myo",
-            "りゃ": "rya", "りゅ": "ryu", "りょ": "ryo",
-            "ふぁ": "fa", "ふぃ": "fi", "ふぇ": "fe", "ふぉ": "fo",
-            "ー": "-"
+            "ー": "-",
         };
 
         // ゲーム状態
@@ -867,6 +893,4 @@
         });
     </script>
 </body>
-
 </html>
-
