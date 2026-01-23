@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZENタイピングゲーム（仮）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        #game-container {
+            width: 90%;
+            max-width: 800px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 3em;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        #title-screen, #countdown-screen, #game-screen, #result-screen {
+            display: none;
+        }
+        #title-screen.active, #countdown-screen.active, #game-screen.active, #result-screen.active {
+            display: block;
+        }
+        .instruction {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+        .config {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+        .config h3 {
+            margin-bottom: 15px;
+        }
+        .config-option {
+            margin: 10px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        select {
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: none;
+            font-size: 1em;
+        }
+        #countdown {
+            font-size: 5em;
+            font-weight: bold;
+        }
+        #game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 50px;
+            font-size: 1.5em;
+        }
+        #word-display {
+            margin: 50px 0;
+        }
+        #kanji {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            transition: color 0.2s;
+        }
+        #kanji.complete {
+            color: #FFD700;
+        }
+        #hiragana {
+            font-size: 2em;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+        #romaji {
+            font-size: 2em;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 3px;
+        }
+        .char {
+            display: inline-block;
+            transition: color 0.1s;
+        }
+        .char.correct {
+            color: #FFD700;
+        }
+        .char.incorrect {
+            color: #FF4444;
+        }
+        #result-screen {
+            font-size: 1.5em;
+            line-height: 2;
+        }
+        .result-item {
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+        }
+        .big-text {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="title-screen" class="active">
+            <h1>ZENタイピングゲーム</h1>
+            <p class="instruction">Space キーを押してください</p>
+            <div class="config">
+                <h3>コンフィグ</h3>
+                <div class="config-option">
+                    <label>し: </label>
+                    <select id="config-shi">
+                        <option value="shi">shi</option>
+                        <option value="si">si</option>
+                    </select>
+                </div>
+                <div class="config-option">
+                    <label>ち: </label>
+                    <select id="config-chi">
+                        <option value="chi">chi</option>
+                        <option value="ti">ti</option>
+                    </select>
+                </div>
+                <div class="config-option">
+                    <label>つ: </label>
+                    <select id="config-tsu">
+                        <option value="tsu">tsu</option>
+                        <option value="tu">tu</option>
+                    </select>
+                </div>
+                <div class="config-option">
+                    <label>ふ: </label>
+                    <select id="config-fu">
+                        <option value="fu">fu</option>
+                        <option value="hu">hu</option>
+                    </select>
+                </div>
+                <div class="config-option">
+                    <label>じ: </label>
+                    <select id="config-ji">
+                        <option value="ji">ji</option>
+                        <option value="zi">zi</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="countdown-screen">
+            <div id="countdown">3</div>
+        </div>
+
+        <div id="game-screen">
+            <div id="game-info">
+                <div id="time-display">時間: <span id="time">30</span></div>
+                <div id="point-display">ポイント: <span id="points">0</span></div>
+            </div>
+            <div id="word-display">
+                <div id="kanji"></div>
+                <div id="hiragana"></div>
+                <div id="romaji"></div>
+            </div>
+        </div>
+
+        <div id="result-screen">
+            <h1>終了！</h1>
+            <div class="result-item big-text">ポイント: <span id="final-points"></span></div>
+            <div class="result-item">キー入力の秒速: <span id="keys-per-second"></span></div>
+            <div class="result-item">ミスタイプ数: <span id="miss-count"></span></div>
+            <p class="instruction" style="margin-top: 30px;">ページをリロードして再プレイ</p>
+        </div>
+    </div>
+
+    <script>
+        // デバッグ用: 自動入力の秒速 (0で無効)
+        const AUTO_INPUT_SPEED = 0;
+
+        // 単語辞書
+        const wordDict = {
+            "保険": "ほけん",
+            "青空": "あおぞら",
+            "時計": "とけい",
+            "図書館": "としょかん",
+            "電車": "でんしゃ",
+            "机": "つくえ",
+            "新聞": "しんぶん",
+            "友達": "ともだち",
+            "学校": "がっこう",
+            "会社": "かいしゃ",
+            "窓": "まど",
+            "音楽": "おんがく",
+            "料理": "りょうり",
+            "地図": "ちず",
+            "写真": "しゃしん",
+            "映画": "えいが",
+            "部屋": "へや",
+            "椅子": "いす",
+            "鉛筆": "えんぴつ",
+            "消しゴム": "けしごむ",
+            "自転車": "じてんしゃ",
+            "信号": "しんごう",
+            "駅": "えき",
+            "切符": "きっぷ",
+            "病院": "びょういん",
+            "薬": "くすり",
+            "医者": "いしゃ",
+            "看護師": "かんごし",
+            "先生": "せんせい",
+            "生徒": "せいと",
+            "教科書": "きょうかしょ",
+            "黒板": "こくばん",
+            "試験": "しけん",
+            "宿題": "しゅくだい",
+            "休憩": "きゅうけい",
+            "朝食": "ちょうしょく",
+            "昼食": "ちゅうしょく",
+            "夕食": "ゆうしょく",
+            "野菜": "やさい",
+            "果物": "くだもの",
+            "牛乳": "ぎゅうにゅう",
+            "水": "みず",
+            "お茶": "おちゃ",
+            "珈琲": "こーひー",
+            "砂糖": "さとう",
+            "塩": "しお",
+            "醤油": "しょうゆ",
+            "味噌": "みそ",
+            "米": "こめ",
+            "麺": "めん",
+            "魚": "さかな",
+            "肉": "にく",
+            "卵": "たまご",
+            "豆腐": "とうふ",
+            "冷蔵庫": "れいぞうこ",
+            "電子レンジ": "でんしれんじ",
+            "掃除機": "そうじき",
+            "洗濯機": "せんたくき",
+            "風呂": "ふろ",
+            "台所": "だいどころ",
+            "寝室": "しんしつ",
+            "玄関": "げんかん",
+            "庭": "にわ",
+            "花": "はな",
+            "木": "き",
+            "山": "やま",
+            "川": "かわ",
+            "海": "うみ",
+            "空": "そら",
+            "雲": "くも",
+            "雨": "あめ",
+            "雪": "ゆき",
+            "風": "かぜ",
+            "太陽": "たいよう",
+            "月": "つき",
+            "星": "ほし",
+            "春": "はる",
+            "夏": "なつ",
+            "秋": "あき",
+            "冬": "ふゆ",
+            "今日": "きょう",
+            "明日": "あした",
+            "昨日": "きのう",
+            "午前": "ごぜん",
+            "午後": "ごご",
+            "毎日": "まいにち",
+            "週末": "しゅうまつ",
+            "休日": "きゅうじつ",
+            "誕生日": "たんじょうび",
+            "正月": "しょうがつ",
+            "携帯電話": "けいたいでんわ",
+            "電話": "でんわ",
+            "手紙": "てがみ",
+            "荷物": "にもつ",
+            "鞄": "かばん",
+            "財布": "さいふ",
+            "眼鏡": "めがね",
+            "傘": "かさ",
+            "帽子": "ぼうし",
+            "靴": "くつ",
+            "ビッグバン": "びっぐばん",
+            "スフィンクス": "すふぃんくす",
+            "新人研修": "しんじんけんしゅう",
+            "インストール": "いんすとーる",
+            "除草剤": "じょそうざい",
+            "光合成": "こうごうせい",
+            "作曲": "さっきょく",
+            "カメラ": "かめら",
+            "子守唄": "こもりうた",
+            "充電器": "じゅうでんき",
+            "リラクゼーション": "りらくぜーしょん",
+            "教授": "きょうじゅ",
+            "図鑑": "ずかん",
+            "ネオンライト": "ねおんらいと",
+            "調理実習": "ちょうりじっしゅう",
+            "目玉焼き": "めだまやき",
+            "郵便物": "ゆうびんぶつ",
+            "筋トレ": "きんとれ",
+            "テニス": "てにす",
+            "白菜": "はくさい",
+            "賞味期限": "しょうみきげん",
+            "栗きんとん": "くりきんとん",
+            "空集合": "くうしゅうごう",
+            "成分表示": "せいぶんひょうじ",
+            "先頭集団": "せんとうしゅうだん",
+            "平行四辺形": "へいこうしへんけい",
+            "影響力": "えいきょうりょく",
+            "世界遺産": "せかいいさん",
+            "温泉": "おんせん",
+            "生クリーム": "なまくりーむ",
+            "時間割": "じかんわり",
+            "ミュージアム": "みゅーじあむ",
+            "サファリパーク": "さふぁりぱーく",
+            "予備校": "よびこう",
+            "イヤホン": "いやほん",
+            "ヘッドホン": "へっどほん",
+            "木工用ボンド": "もっこうようぼんど",
+            "忍耐力": "にんたいりょく",
+            "接着剤": "せっちゃくざい",
+            "納豆": "なっとう",
+            "ミキサー": "みきさー",
+            "司令塔": "しれいとう",
+            "ロールキャベツ": "ろーるきゃべつ",
+            "桜": "さくら",
+            "イリュージョン": "いりゅーじょん",
+            "中華料理": "ちゅうかりょうり",
+            "カスタード": "かすたーど",
+            "ガーリック": "がーりっく",
+            "宇宙飛行士": "うちゅうひこうし",
+            "日本酒": "にほんしゅ",
+            "マッシュルーム": "まっしゅるーむ",
+            "電話帳": "でんわちょう",
+            "砂丘": "さきゅう",
+            "ボウリング": "ぼうりんぐ",
+            "バッテリー": "ばってりー",
+            "ナポリタン": "なぽりたん",
+            "水平線": "すいへいせん",
+            "柔道": "じゅうどう",
+            "加速度": "かそくど",
+            "保冷剤": "ほれいざい",
+            "最先端": "さいせんたん",
+            "海外": "かいがい",
+            "数字": "すうじ",
+            "乾電池": "かんでんち",
+            "ハイタッチ": "はいたっち",
+            "土星": "どせい",
+            "可能性": "かのうせい",
+            "中華街": "ちゅうかがい",
+            "コンビニエンスストア": "こんびにえんすすとあ",
+            "スイミングスクール": "すいみんぐすくーる",
+            "ダンジョン": "だんじょん",
+            "クラシック": "くらしっく",
+            "サーキット": "さーきっと",
+            "バレーボール": "ばれーぼーる",
+            "クライマックス": "くらいまっくす",
+            "惑星": "わくせい",
+            "横断歩道": "おうだんほどう",
+            "陰陽師": "おんみょうじ",
+            "消防署": "しょうぼうしょ",
+            "イリオモテヤマネコ": "いりおもてやまねこ",
+            "営業時間": "えいぎょうじかん",
+            "日曜日": "にちようび",
+            "月曜日": "げつようび",
+            "火曜日": "かようび",
+            "水曜日": "すいようび",
+            "木曜日": "もくようび",
+            "金曜日": "きんようび",
+            "土曜日": "どようび",
+            "暗証番号": "あんしょうばんごう",
+            "オーバーヒート": "おーばーひーと",
+            "冷凍庫": "れいとうこ",
+            "冷蔵保存": "れいぞうほぞん",
+            "冷凍保存": "れいとうほぞん",
+            "公共事業": "こうきょうじぎょう",
+            "成人式": "せいじんしき",
+            "ドローン": "どろーん",
+            "マンション": "まんしょん",
+            "ホットミルク": "ほっとみるく",
+            "チキン南蛮": "ちきんなんばん",
+            "下駄箱": "げたばこ",
+            "真ん中": "まんなか",
+            "検温": "けんおん",
+            "潜入": "せんにゅう",
+            "深夜": "しんや",
+        };
+
+        // ローマ字変換パターン
+        let romajiPatterns = {
+            "し": ["shi", "si"],
+            "ち": ["chi", "ti"],
+            "つ": ["tsu", "tu"],
+            "ふ": ["fu", "hu"],
+            "じ": ["ji", "zi"],
+            "しゃ": ["sha", "sya"],
+            "しゅ": ["shu", "syu"],
+            "しょ": ["sho", "syo"],
+            "ちゃ": ["cha", "tya"],
+            "ちゅ": ["chu", "tyu"],
+            "ちょ": ["cho", "tyo"],
+            "じゃ": ["ja", "jya", "zya"],
+            "じゅ": ["ju", "jyu", "zyu"],
+            "じょ": ["jo", "jyo", "zyo"],
+            "ん": ["n", "nn", "xn"],
+            "んあ": ["nna", "xna"], "んい": ["nni", "xni"], "んう": ["nnu", "xnu"], "んえ": ["nne", "xne"], "んお": ["nno", "xno"],
+            "んな": ["nnna", "xnna"], "んに": ["nnni", "xnni"], "んぬ": ["nnnu", "xnnu"], "んね": ["nnne", "xnne"], "んの": ["nnno", "xnno"],
+            "んや": ["nnya", "xnya"], "んゆ": ["nnyu", "xnyu"], "んよ": ["nnyo", "xnyo"], 
+            "んにゃ": ["nnnya", "xnnya"], "んにゅ": ["nnnyu", "xnnyu"], "んにょ": ["nnnyo", "xnnyo"],
+        };
+
+        const basicRomaji = {
+            "あ": "a", "い": "i", "う": "u", "え": "e", "お": "o",
+            "か": "ka", "き": "ki", "く": "ku", "け": "ke", "こ": "ko",
+            "さ": "sa", "す": "su", "せ": "se", "そ": "so",
+            "た": "ta", "て": "te", "と": "to",
+            "な": "na", "に": "ni", "ぬ": "nu", "ね": "ne", "の": "no",
+            "は": "ha", "ひ": "hi", "へ": "he", "ほ": "ho",
+            "ま": "ma", "み": "mi", "む": "mu", "め": "me", "も": "mo",
+            "や": "ya", "ゆ": "yu", "よ": "yo",
+            "ら": "ra", "り": "ri", "る": "ru", "れ": "re", "ろ": "ro",
+            "わ": "wa", "を": "wo",
+            "が": "ga", "ぎ": "gi", "ぐ": "gu", "げ": "ge", "ご": "go",
+            "ざ": "za", "ず": "zu", "ぜ": "ze", "ぞ": "zo",
+            "だ": "da", "で": "de", "ど": "do",
+            "ば": "ba", "び": "bi", "ぶ": "bu", "べ": "be", "ぼ": "bo",
+            "ぱ": "pa", "ぴ": "pi", "ぷ": "pu", "ぺ": "pe", "ぽ": "po",
+            "きゃ": "kya", "きゅ": "kyu", "きょ": "kyo",
+            "ぎゃ": "gya", "ぎゅ": "gyu", "ぎょ": "gyo",
+            "にゃ": "nya", "にゅ": "nyu", "にょ": "nyo",
+            "ひゃ": "hya", "ひゅ": "hyu", "ひょ": "hyo",
+            "びゃ": "bya", "びゅ": "byu", "びょ": "byo",
+            "ぴゃ": "pya", "ぴゅ": "pyu", "ぴょ": "pyo",
+            "みゃ": "mya", "みゅ": "myu", "みょ": "myo",
+            "りゃ": "rya", "りゅ": "ryu", "りょ": "ryo",
+            "ふぁ": "fa", "ふぃ": "fi", "ふぇ": "fe", "ふぉ": "fo",
+            "ー": "-"
+        };
+
+        // ゲーム状態
+        let gameState = {
+            screen: 'title',
+            time: 30,
+            points: 0,
+            currentWord: '',
+            currentHiragana: '',
+            currentRomaji: [],
+            currentRomajiDisplay: '',
+            currentIndex: 0,
+            possibleInputs: [],
+            missCount: 0,
+            totalKeys: 0,
+            startTime: 0,
+            lastDecreaseTime: 0,
+            speedLevel: 1,
+            lastSpeedUpTime: 0,
+            userConfig: {},
+            cooldown: false,
+            hiraganaMapping: []
+        };
+
+        // 画面要素
+        const screens = {
+            title: document.getElementById('title-screen'),
+            countdown: document.getElementById('countdown-screen'),
+            game: document.getElementById('game-screen'),
+            result: document.getElementById('result-screen')
+        };
+
+        function switchScreen(screenName) {
+            Object.values(screens).forEach(s => s.classList.remove('active'));
+            screens[screenName].classList.add('active');
+            gameState.screen = screenName;
+        }
+
+        function loadConfig() {
+            gameState.userConfig = {
+                "し": document.getElementById('config-shi').value,
+                "ち": document.getElementById('config-chi').value,
+                "つ": document.getElementById('config-tsu').value,
+                "ふ": document.getElementById('config-fu').value,
+                "じ": document.getElementById('config-ji').value
+            };
+        }
+
+        function hiraganaToRomaji(hiragana) {
+            let result = [];
+            let mapping = [];
+            let i = 0;
+            let hiraganaIndex = 0;
+            
+            while (i < hiragana.length) {
+                let found = false;
+                
+                // 促音チェック
+                if (hiragana[i] === 'っ' && i + 1 < hiragana.length) {
+                    // 次の文字の全パターンを取得
+                    let nextChar = hiragana[i + 1];
+                    let nextPatterns = [];
+                    
+                    // 2文字チェック（次の文字が2文字の組み合わせの場合）
+                    if (i + 2 < hiragana.length) {
+                        let two = hiragana.substring(i + 1, i + 3);
+                        if (romajiPatterns[two]) {
+                            nextPatterns = romajiPatterns[two];
+                        } else if (basicRomaji[two]) {
+                            nextPatterns = [basicRomaji[two]];
+                        }
+                    }
+                    
+                    // 1文字チェック
+                    if (nextPatterns.length === 0) {
+                        if (romajiPatterns[nextChar]) {
+                            nextPatterns = romajiPatterns[nextChar];
+                        } else if (basicRomaji[nextChar]) {
+                            nextPatterns = [basicRomaji[nextChar]];
+                        }
+                    }
+                    
+                    if (nextPatterns.length > 0) {
+                        // 各パターンの最初の文字（子音）を取得
+                        let consonants = [];
+                        for (let pattern of nextPatterns) {
+                            let consonant = pattern[0];
+                            if (!consonants.includes(consonant)) {
+                                consonants.push(consonant);
+                            }
+                        }
+                        result.push([consonants]);
+                        mapping.push(hiraganaIndex);
+                        i++;
+                        hiraganaIndex++;
+                        found = true;
+                    }
+                }
+                
+                // 3文字チェック
+                if (!found && i + 2 < hiragana.length) {
+                    let three = hiragana.substring(i, i + 3);
+                    if (romajiPatterns[three] || basicRomaji[three]) {
+                        let patterns = romajiPatterns[three] || [basicRomaji[three]];
+                        result.push([patterns]);
+                        mapping.push(hiraganaIndex);
+                        i += 3;
+                        hiraganaIndex += 3;
+                        found = true;
+                    }
+                }
+                
+                // 2文字チェック
+                if (!found && i + 1 < hiragana.length) {
+                    let two = hiragana.substring(i, i + 2);
+                    if (romajiPatterns[two] || basicRomaji[two]) {
+                        let patterns = romajiPatterns[two] || [basicRomaji[two]];
+                        result.push([patterns]);
+                        mapping.push(hiraganaIndex);
+                        i += 2;
+                        hiraganaIndex += 2;
+                        found = true;
+                    }
+                }
+                
+                // 1文字チェック
+                if (!found) {
+                    let one = hiragana[i];
+                    if (romajiPatterns[one] || basicRomaji[one]) {
+                        let patterns = romajiPatterns[one] || [basicRomaji[one]];
+                        result.push([patterns]);
+                        mapping.push(hiraganaIndex);
+                    }
+                    i++;
+                    hiraganaIndex++;
+                }
+            }
+            
+            return {romaji: result, mapping: mapping};
+        }
+
+        function getDisplayRomaji(romajiArray) {
+            let result = '';
+            for (let patterns of romajiArray) {
+                let chosen = patterns[0][0];
+                for (let patternGroup of patterns) {
+                    for (let pattern of patternGroup) {
+                        for (let key in gameState.userConfig) {
+                            if (pattern === gameState.userConfig[key]) {
+                                chosen = pattern;
+                                break;
+                            }
+                        }
+                    }
+                }
+                result += chosen;
+            }
+            return result;
+        }
+
+        function generatePossibleInputs(romajiArray, index) {
+            if (index >= romajiArray.length) {
+                return [''];
+            }
+            
+            let current = romajiArray[index];
+            let rest = generatePossibleInputs(romajiArray, index + 1);
+            let results = [];
+            
+            for (let patternGroup of current) {
+                for (let pattern of patternGroup) {
+                    for (let r of rest) {
+                        results.push(pattern + r);
+                    }
+                }
+            }
+            
+            return results;
+        }
+
+        function nextWord() {
+            const words = Object.entries(wordDict);
+            const [kanji, hiragana] = words[Math.floor(Math.random() * words.length)];
+            
+            gameState.currentWord = kanji;
+            gameState.currentHiragana = hiragana;
+            const converted = hiraganaToRomaji(hiragana);
+            gameState.currentRomaji = converted.romaji;
+            gameState.hiraganaMapping = converted.mapping;
+            gameState.currentRomajiDisplay = getDisplayRomaji(gameState.currentRomaji);
+            gameState.currentIndex = 0;
+            gameState.possibleInputs = generatePossibleInputs(gameState.currentRomaji, 0);
+            gameState.cooldown = false;
+            
+            document.getElementById('kanji').textContent = kanji;
+            document.getElementById('kanji').classList.remove('complete');
+            updateHiraganaDisplay();
+            updateRomajiDisplay();
+        }
+        
+        function updateHiraganaDisplay() {
+            const hiraganaEl = document.getElementById('hiragana');
+            hiraganaEl.innerHTML = '';
+            
+            // 現在のローマ字入力位置に対応するひらがな位置を取得
+            let completedHiraganaIndex = -1;
+            
+            // 単語完了時は全て黄色に
+            if (gameState.currentIndex >= gameState.currentRomajiDisplay.length) {
+                completedHiraganaIndex = gameState.currentHiragana.length - 1;
+            } else {
+                for (let i = 0; i < gameState.currentRomaji.length; i++) {
+                    let romajiLength = 0;
+                    for (let j = 0; j <= i; j++) {
+                        romajiLength += getDisplayRomaji([gameState.currentRomaji[j]]).length;
+                    }
+                    if (romajiLength <= gameState.currentIndex) {
+                        completedHiraganaIndex = gameState.hiraganaMapping[i];
+                    }
+                }
+            }
+            
+            for (let i = 0; i < gameState.currentHiragana.length; i++) {
+                const span = document.createElement('span');
+                span.className = 'char';
+                span.textContent = gameState.currentHiragana[i];
+                if (i <= completedHiraganaIndex) {
+                    span.classList.add('correct');
+                }
+                hiraganaEl.appendChild(span);
+            }
+        }
+
+        function updateRomajiDisplay() {
+            const romajiEl = document.getElementById('romaji');
+            romajiEl.innerHTML = '';
+            
+            for (let i = 0; i < gameState.currentRomajiDisplay.length; i++) {
+                const span = document.createElement('span');
+                span.className = 'char';
+                span.textContent = gameState.currentRomajiDisplay[i];
+                if (i < gameState.currentIndex || gameState.currentIndex >= gameState.currentRomajiDisplay.length) {
+                    span.classList.add('correct');
+                }
+                romajiEl.appendChild(span);
+            }
+        }
+
+        function handleKeyPress(key) {
+            if (gameState.screen !== 'game' || gameState.cooldown) return;
+            
+            gameState.totalKeys++;
+            
+            const currentInput = gameState.currentRomajiDisplay.substring(0, gameState.currentIndex) + key;
+            let validInput = false;
+            let newDisplay = null;
+            
+            for (let possible of gameState.possibleInputs) {
+                if (possible.startsWith(currentInput)) {
+                    validInput = true;
+                    if (currentInput.length < gameState.currentRomajiDisplay.length && 
+                        possible[currentInput.length - 1] !== gameState.currentRomajiDisplay[currentInput.length - 1]) {
+                        newDisplay = possible;
+                    }
+                    break;
+                }
+            }
+            
+            const charEl = document.getElementById('romaji').children[gameState.currentIndex];
+            
+            if (validInput) {
+                if (newDisplay) {
+                    gameState.currentRomajiDisplay = newDisplay;
+                }
+                
+                charEl.classList.add('correct');
+                charEl.classList.remove('incorrect');
+                gameState.currentIndex++;
+                
+                if (gameState.time >= 99) {
+                    gameState.points += 2;
+                } else {
+                    gameState.points++;
+                    gameState.time++;
+                }
+                
+                updateHiraganaDisplay();
+                
+                if (gameState.currentIndex >= gameState.currentRomajiDisplay.length) {
+                    gameState.cooldown = true;
+                    document.getElementById('kanji').classList.add('complete');
+                    updateHiraganaDisplay();
+                    updateRomajiDisplay();
+                    setTimeout(() => nextWord(), 400);
+                } else {
+                    updateRomajiDisplay();
+                }
+            } else {
+                charEl.classList.add('incorrect');
+                setTimeout(() => {
+                    charEl.classList.remove('incorrect');
+                }, 200);
+                gameState.points--;
+                gameState.missCount++;
+            }
+            
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            document.getElementById('time').textContent = gameState.time;
+            document.getElementById('points').textContent = gameState.points;
+        }
+
+        function startCountdown() {
+            loadConfig();
+            switchScreen('countdown');
+            let count = 3;
+            document.getElementById('countdown').textContent = count;
+            
+            const interval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    document.getElementById('countdown').textContent = count;
+                } else {
+                    clearInterval(interval);
+                    startGame();
+                }
+            }, 1000);
+        }
+
+        function startGame() {
+            switchScreen('game');
+            gameState.time = 30;
+            gameState.points = 0;
+            gameState.missCount = 0;
+            gameState.totalKeys = 0;
+            gameState.speedLevel = 1;
+            gameState.startTime = Date.now();
+            gameState.lastDecreaseTime = Date.now();
+            gameState.lastSpeedUpTime = Date.now();
+            
+            updateDisplay();
+            nextWord();
+            gameLoop();
+            
+            if (AUTO_INPUT_SPEED > 0) {
+                startAutoInput();
+            }
+        }
+
+        function gameLoop() {
+            if (gameState.screen !== 'game') return;
+            
+            const now = Date.now();
+            const elapsed = now - gameState.lastDecreaseTime;
+            const decreaseInterval = 1000 / gameState.speedLevel;
+            
+            if (elapsed >= decreaseInterval) {
+                gameState.time -= 1;
+                gameState.lastDecreaseTime = now;
+                updateDisplay();
+                
+                if (gameState.time <= 0) {
+                    endGame();
+                    return;
+                }
+            }
+            
+            // スピードアップチェック（永久的に）
+            const totalElapsed = now - gameState.startTime;
+            const speedUpThreshold = 30000 + (gameState.speedLevel - 1) * 5000;
+            
+            if (totalElapsed >= speedUpThreshold && now >= gameState.lastSpeedUpTime + 5000) {
+                gameState.speedLevel++;
+                gameState.lastSpeedUpTime = now;
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        function endGame() {
+            switchScreen('result');
+            const duration = (Date.now() - gameState.startTime) / 1000;
+            const kps = Math.floor((gameState.totalKeys - gameState.missCount) / duration * 10) / 10;
+            
+            document.getElementById('final-points').textContent = gameState.points;
+            document.getElementById('keys-per-second').textContent = kps;
+            document.getElementById('miss-count').textContent = gameState.missCount;
+        }
+
+        // 自動入力（デバッグ用）
+        function startAutoInput() {
+            if (AUTO_INPUT_SPEED <= 0) return;
+            
+            const interval = 1000 / AUTO_INPUT_SPEED;
+            const autoInterval = setInterval(() => {
+                if (gameState.screen !== 'game') {
+                    clearInterval(autoInterval);
+                    return;
+                }
+                
+                const nextChar = gameState.currentRomajiDisplay[gameState.currentIndex];
+                if (nextChar) {
+                    handleKeyPress(nextChar);
+                }
+            }, interval);
+        }
+
+        // イベントリスナー
+        document.addEventListener('keydown', (e) => {
+            if (gameState.screen === 'title' && e.code === 'Space') {
+                e.preventDefault();
+                startCountdown();
+            } else if (gameState.screen === 'game') {
+                if (e.key.length === 1 && e.key.match(/[a-z\-]/i)) {
+                    e.preventDefault();
+                    handleKeyPress(e.key.toLowerCase());
+                }
+            }
+        });
+    </script>
+</body>
+</html>
