@@ -129,36 +129,36 @@
                 <div class="config-option">
                     <label>し: </label>
                     <select id="config-shi">
-                        <option value="shi">shi</option>
                         <option value="si">si</option>
+                        <option value="shi">shi</option>
                     </select>
                 </div>
                 <div class="config-option">
                     <label>ち: </label>
                     <select id="config-chi">
-                        <option value="chi">chi</option>
                         <option value="ti">ti</option>
+                        <option value="chi">chi</option>
                     </select>
                 </div>
                 <div class="config-option">
                     <label>つ: </label>
                     <select id="config-tsu">
-                        <option value="tsu">tsu</option>
                         <option value="tu">tu</option>
+                        <option value="tsu">tsu</option>
                     </select>
                 </div>
                 <div class="config-option">
                     <label>ふ: </label>
                     <select id="config-fu">
-                        <option value="fu">fu</option>
                         <option value="hu">hu</option>
+                        <option value="fu">fu</option>
                     </select>
                 </div>
                 <div class="config-option">
                     <label>じ: </label>
                     <select id="config-ji">
-                        <option value="ji">ji</option>
                         <option value="zi">zi</option>
+                        <option value="ji">ji</option>
                     </select>
                 </div>
             </div>
@@ -405,10 +405,10 @@
         let romajiPatterns = {
             "い": ["i", "yi"],
             "か": ["ka", "ca"], "く": ["ku", "cu", "qu"], "こ": ["ko", "co"],
-            "し": ["shi", "si", "ci"], "せ": ["se", "ce"],
-            "ち": ["chi", "ti"], "つ": ["tsu", "tu"],
-            "ふ": ["fu", "hu"],
-            "じ": ["ji", "zi"],
+            "し": ["si", "shi", "ci"], "せ": ["se", "ce"],
+            "ち": ["ti", "chi"], "つ": ["tu", "tsu"],
+            "ふ": ["hu", "fu"],
+            "じ": ["zi", "ji"],
             "きゃ": ["kya", "kixya", "kilya"], "きゅ": ["kyu", "kixyu", "kilyu"], "きょ": ["kyo", "kixyo", "kilyo"],
             "ぎゃ": ["gya", "gixya", "gilya"], "ぎゅ": ["gyu", "gixyu", "gilyu"], "ぎょ": ["gyo", "gixyo", "gilyo"],
             "にゃ": ["nya", "nixya", "nilya"], "にゅ": ["nyu", "nixyu", "nilyu"], "にょ": ["nyo", "nixyo", "nilyo"],
@@ -417,18 +417,18 @@
             "ぴゃ": ["pya", "pixya", "pilya"], "ぴゅ": ["pyu", "pixyu", "pilyu"], "ぴょ": ["pyo", "pixyo", "pilyo"],
             "みゃ": ["mya", "mixya", "milya"], "みゅ": ["myu", "mixyu", "milyu"], "みょ": ["myo", "mixyo", "milyo"],
             "りゃ": ["rya", "rixya", "rilya"], "りゅ": ["ryu", "rixyu", "rilyu"], "りょ": ["ryo", "rixyo", "rilyo"],
-            "しゃ": ["sha", "sya", "shixya", "shilya", "sixya", "silya", "cixya", "cilya"],
-            "しゅ": ["shu", "syu", "shixyu", "shilyu", "sixyu", "silyu", "cixyu", "cilyu"],
-            "しょ": ["sho", "syo", "shixyo", "shilyo", "sixyo", "silyo", "cixyo", "cilyo"],
-            "しぇ": ["she", "sye", "shixe", "shile", "sixe", "sile", "cixe", "cile"],
+            "しゃ": ["sya", "sha", "shixya", "shilya", "sixya", "silya", "cixya", "cilya"],
+            "しゅ": ["syu", "shu", "shixyu", "shilyu", "sixyu", "silyu", "cixyu", "cilyu"],
+            "しょ": ["syo", "sho", "shixyo", "shilyo", "sixyo", "silyo", "cixyo", "cilyo"],
+            "しぇ": ["sye", "she", "shixe", "shile", "sixe", "sile", "cixe", "cile"],
             "じゃ": ["ja", "jya", "zya", "jixya", "jilya", "zixya", "zilya"],
             "じゅ": ["ju", "jyu", "zyu", "jixya", "jilya", "zixya", "zilya"],
             "じょ": ["jo", "jyo", "zyo", "jixya", "jilya", "zixya", "zilya"],
             "じぇ": ["je", "jye", "zye", "jixe", "jile", "zixe", "zile"],
-            "ちゃ": ["cha", "cya", "tya", "chixya", "chiilya", "tixya", "tilya"],
-            "ちゅ": ["chu", "cyu", "tyu", "chixyu", "chiilyu", "tixyu", "tilyu"],
-            "ちょ": ["cho", "cyo", "tyo", "chixyo", "chiilyo", "tixyo", "tilyo"],
-            "ちぇ": ["che", "cye", "tye", "chixe", "chiile", "tixe", "tile"],
+            "ちゃ": ["tya", "cha", "cya", "chixya", "chiilya", "tixya", "tilya"],
+            "ちゅ": ["tyu", "chu", "cyu", "chixyu", "chiilyu", "tixyu", "tilyu"],
+            "ちょ": ["tyo", "cho", "cyo", "chixyo", "chiilyo", "tixyo", "tilyo"],
+            "ちぇ": ["tye", "che", "cye", "chixe", "chiile", "tixe", "tile"],
             "うぃ": ["wi", "whi", "uxi", "uli", "uxyi", "ulyi"],
             "うぇ": ["we", "whe", "uxe", "ule"],
             "うぉ": ["who", "uxo", "ulo"],
