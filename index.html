@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZENタイピングゲーム（仮）</title>
+    <title>ZENタイピングゲーム（ランク機能付き）</title>
     <style>
         * {
             margin: 0;
@@ -117,6 +117,12 @@
             font-weight: bold;
             margin: 20px 0;
         }
+        /* ランク表示用のスタイル追加 */
+        #rank-display {
+            color: #FFD700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            font-size: 2.5em; /* ポイントより少し大きく */
+        }
     </style>
 </head>
 <body>
@@ -182,6 +188,9 @@
 
         <div id="result-screen">
             <h1>終了！</h1>
+            <div class="result-item big-text">
+                ランク: <span id="final-rank"></span>
+            </div>
             <div class="result-item big-text">ポイント: <span id="final-points"></span></div>
             <div class="result-item">キー入力の秒速: <span id="keys-per-second"></span></div>
             <div class="result-item">ミスタイプ数: <span id="miss-count"></span></div>
@@ -192,6 +201,29 @@
     <script>
         // デバッグ用: 自動入力の秒速 (0で無効)
         const AUTO_INPUT_SPEED = 0;
+
+        // ランク定義 (点数の高い順)
+        const rankData = [
+            { name: "レジェンド", score: 500 },
+            { name: "ダイヤ3", score: 485 },
+            { name: "ダイヤ2", score: 470 },
+            { name: "ダイヤ1", score: 455 },
+            { name: "プラチナ3", score: 440 },
+            { name: "プラチナ2", score: 425 },
+            { name: "プラチナ1", score: 410 },
+            { name: "ゴールド3", score: 390 },
+            { name: "ゴールド2", score: 370 },
+            { name: "ゴールド1", score: 350 },
+            { name: "シルバー3", score: 325 },
+            { name: "シルバー2", score: 300 },
+            { name: "シルバー1", score: 275 },
+            { name: "ブロンズ3", score: 250 },
+            { name: "ブロンズ2", score: 225 },
+            { name: "ブロンズ1", score: 200 },
+            { name: "ビギナー3", score: 150 },
+            { name: "ビギナー2", score: 100 },
+            { name: "ビギナー1", score: 50 }
+        ];
 
         // 単語辞書
         const wordDict = {
@@ -463,7 +495,7 @@
             "や": "ya", "ゆ": "yu", "よ": "yo",
             "ら": "ra", "り": "ri", "る": "ru", "れ": "re", "ろ": "ro",
             "わ": "wa", "を": "wo",
-            "ゔ": "vu", // 環境依存文字であるため、カタカナの「ヴ」を使った方がいいかも？
+            "ゔ": "vu", 
             "が": "ga", "ぎ": "gi", "ぐ": "gu", "げ": "ge", "ご": "go",
             "ざ": "za", "ず": "zu", "ぜ": "ze", "ぞ": "zo",
             "だ": "da", "ぢ": "di", "で": "de", "ど": "do",
@@ -529,11 +561,9 @@
                 
                 // 促音チェック
                 if (hiragana[i] === 'っ' && i + 1 < hiragana.length) {
-                    // 次の文字の全パターンを取得
                     let nextChar = hiragana[i + 1];
                     let nextPatterns = [];
                     
-                    // 2文字チェック（次の文字が2文字の組み合わせの場合）
                     if (i + 2 < hiragana.length) {
                         let two = hiragana.substring(i + 1, i + 3);
                         if (romajiPatterns[two]) {
@@ -543,7 +573,6 @@
                         }
                     }
                     
-                    // 1文字チェック
                     if (nextPatterns.length === 0) {
                         if (romajiPatterns[nextChar]) {
                             nextPatterns = romajiPatterns[nextChar];
@@ -553,7 +582,6 @@
                     }
                     
                     if (nextPatterns.length > 0) {
-                        // 各パターンの最初の文字（子音）を取得
                         let consonants = [];
                         for (let pattern of nextPatterns) {
                             let consonant = pattern[0];
@@ -569,7 +597,6 @@
                     }
                 }
                 
-                // 3文字チェック
                 if (!found && i + 2 < hiragana.length) {
                     let three = hiragana.substring(i, i + 3);
                     if (romajiPatterns[three] || basicRomaji[three]) {
@@ -582,7 +609,6 @@
                     }
                 }
                 
-                // 2文字チェック
                 if (!found && i + 1 < hiragana.length) {
                     let two = hiragana.substring(i, i + 2);
                     if (romajiPatterns[two] || basicRomaji[two]) {
@@ -595,7 +621,6 @@
                     }
                 }
                 
-                // 1文字チェック
                 if (!found) {
                     let one = hiragana[i];
                     if (romajiPatterns[one] || basicRomaji[one]) {
@@ -674,10 +699,8 @@
             const hiraganaEl = document.getElementById('hiragana');
             hiraganaEl.innerHTML = '';
             
-            // 現在のローマ字入力位置に対応するひらがな位置を取得
             let completedHiraganaIndex = -1;
             
-            // 単語完了時は全て黄色に
             if (gameState.currentIndex >= gameState.currentRomajiDisplay.length) {
                 completedHiraganaIndex = gameState.currentHiragana.length - 1;
             } else {
@@ -839,7 +862,6 @@
                 }
             }
             
-            // スピードアップチェック（永久的に）
             const totalElapsed = now - gameState.startTime;
             const speedUpThreshold = 30000 + (gameState.speedLevel - 1) * 5000;
             
@@ -859,9 +881,49 @@
             document.getElementById('final-points').textContent = gameState.points;
             document.getElementById('keys-per-second').textContent = kps;
             document.getElementById('miss-count').textContent = gameState.missCount;
+
+            // ランク計算
+            let currentRank = "ビギナー0";
+            for (const rank of rankData) {
+                if (gameState.points >= rank.score) {
+                    currentRank = rank.name;
+                    break;
+                }
+            }
+            // ランク要素の更新（テキストと色など）
+            const rankEl = document.getElementById('final-rank');
+            rankEl.textContent = currentRank;
+            
+            // ランクに応じて色を変える演出（簡易）
+            if (currentRank === "レジェンド") {
+                rankEl.style.color = "#FF4500"; // オレンジレッド
+                rankEl.style.textShadow = "0 0 20px rgba(255, 69, 0, 0.8)";
+            } else if (currentRank.includes("ダイヤ")) {
+                rankEl.style.color = "#00BFFF"; // ディープスカイブルー
+                rankEl.style.textShadow = "0 0 15px rgba(0, 191, 255, 0.6)";
+            } else if (currentRank.includes("プラチナ")) {
+                // 青白
+                rankEl.style.color = "#E0FFFF"; // LightCyan
+                rankEl.style.textShadow = "0 0 15px rgba(224, 255, 255, 0.8)";
+            } else if (currentRank.includes("ゴールド")) {
+                // 金色
+                rankEl.style.color = "#FFD700"; // Gold
+                rankEl.style.textShadow = "0 0 15px rgba(255, 215, 0, 0.6)";
+            } else if (currentRank.includes("シルバー")) {
+                // 銀色
+                rankEl.style.color = "#C0C0C0"; // Silver
+                rankEl.style.textShadow = "0 0 15px rgba(192, 192, 192, 0.6)";
+            } else if (currentRank.includes("ブロンズ")) {
+                // 銅色
+                rankEl.style.color = "#CD7F32"; // Bronze
+                rankEl.style.textShadow = "0 0 15px rgba(205, 127, 50, 0.6)";
+            } else {
+                // その他（レジェンド、ダイヤ、ビギナー、ランク外など）→ 白
+                rankEl.style.color = "#FFFFFF";
+                rankEl.style.textShadow = "0 0 10px rgba(255, 255, 255, 0.5)";
+            }
         }
 
-        // 自動入力（デバッグ用）
         function startAutoInput() {
             if (AUTO_INPUT_SPEED <= 0) return;
             
@@ -879,7 +941,6 @@
             }, interval);
         }
 
-        // イベントリスナー
         document.addEventListener('keydown', (e) => {
             if (gameState.screen === 'title' && e.code === 'Space') {
                 e.preventDefault();
@@ -894,4 +955,3 @@
     </script>
 </body>
 </html>
-
