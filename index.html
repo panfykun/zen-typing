@@ -794,8 +794,15 @@
 
         function nextWord() {
             const words = Object.entries(wordDict);
-            const [kanji, hiragana] = words[Math.floor(Math.random() * words.length)];
+
+            let availableWords = words;
+            if (gameState.previousWord && words.length > 1) {
+                availableWords = words.filter(([kanji, _]) => kanji !== gameState.previousWord);
+            }
             
+            const [kanji, hiragana] = availableWords[Math.floor(Math.random() * availableWords.length)];
+            
+            gameState.previousWord = kanji;
             gameState.currentWord = kanji;
             gameState.currentHiragana = hiragana;
             const converted = hiraganaToRomaji(hiragana);
