@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZENタイピングゲーム（無限）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            /* 背景色を緑系に変更 */
+            background: linear-gradient(135deg, #1d976c 0%, #20e769 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            overflow: hidden; /* スクロール防止 */
+        }
+        #game-container {
+            width: 90%;
+            max-width: 800px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 3em;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        #title-screen, #countdown-screen, #game-screen, #result-screen {
+            display: none;
+        }
+        #title-screen.active, #countdown-screen.active, #game-screen.active, #result-screen.active {
+            display: block;
+        }
+        .instruction {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+        .config {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+        .config h3 {
+            margin-bottom: 15px;
+        }
+        .config-option {
+            margin: 10px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        select {
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: none;
+            font-size: 1em;
+            color: #333;
+        }
+        #countdown {
+            font-size: 5em;
+            font-weight: bold;
+        }
+        /* ゲーム中のUIレイアウト変更 */
+        #game-ui-left {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            text-align: left;
+            font-family: 'Courier New', monospace;
+            z-index: 10;
+        }
+        #elapsed-time {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .log-entry {
+            font-size: 1.2em;
+            margin-top: 5px;
+            opacity: 0.9;
+            animation: slideDown 0.5s ease-out;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 0.9; transform: translateY(0); }
+        }
+
+        #game-ui-right {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            text-align: right;
+            font-family: 'Courier New', monospace;
+            z-index: 10;
+        }
+        #current-stats {
+            font-size: 1.5em;
+        }
+        .stat-row {
+            margin-bottom: 5px;
+        }
+
+        #word-display {
+            margin: 50px 0;
+        }
+        #kanji {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            transition: color 0.2s;
+        }
+        #kanji.complete {
+            color: #FFD700;
+        }
+        #hiragana {
+            font-size: 2em;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+        #romaji {
+            font-size: 2em;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 3px;
+        }
+        .char {
+            display: inline-block;
+            transition: color 0.1s;
+        }
+        .char.correct {
+            color: #FFD700;
+        }
+        .char.incorrect {
+            color: #FF4444;
+        }
+        #result-screen {
+            font-size: 1.5em;
+            line-height: 2;
+        }
+        .result-item {
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+        }
+        .big-text {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        #end-instruction {
+            font-size: 0.8em;
+            margin-top: 50px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-ui-left" style="display:none;">
+        <div id="elapsed-time">00分00秒</div>
+        <div id="log-container"></div>
+    </div>
+
+    <div id="game-ui-right" style="display:none;">
+        <div id="current-stats">
+            <div class="stat-row">OK: <span id="session-ok">0</span></div>
+            <div class="stat-row">MISS: <span id="session-miss">0</span></div>
+        </div>
+    </div>
+
+    <div id="game-container">
+        <div id="title-screen" class="active">
+            <h1>ZENタイピングゲーム（無限）</h1>
+            <p class="instruction">Space キーを押してスタート</p>
+            <div class="config">
+                <h3>コンフィグ</h3>
+                <div class="config-option">
+                    <label>し: </label>
+                    <select id="config-shi">
+                        <option value="si">si</option>
+                        <option value="shi">shi</option>
+                    </select>
+                </div>
+                <div class="config-option">
+                    <label>ち: </label>
+                    <select id="config-chi">
+                        <option value="ti">ti</option>
+                        <option value="chi">chi</option>
+                    </select>
+                </div>
+                <div class="config-option">
+                    <label>つ: </label>
+                    <select id="config-tsu">
+                        <option value="tu">tu</option>
+                        <option value="tsu">tsu</option>
+                    </select>
+                </div>
+                <div class="config-option">
+                    <label>ふ: </label>
+                    <select id="config-fu">
+                        <option value="hu">hu</option>
+                        <option value="fu">fu</option>
+                    </select>
+                </div>
+                <div class="config-option">
+                    <label>じ: </label>
+                    <select id="config-ji">
+                        <option value="zi">zi</option>
+                        <option value="ji">ji</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="countdown-screen">
+            <div id="countdown">3</div>
+        </div>
+
+        <div id="game-screen">
+            <div id="word-display">
+                <div id="kanji"></div>
+                <div id="hiragana"></div>
+                <div id="romaji"></div>
+            </div>
+            <div id="end-instruction">Spaceキーを3秒長押しで終了</div>
+        </div>
+
+        <div id="result-screen">
+            <h1>リザルト</h1>
+            <div class="result-item">経過時間: <span id="res-time"></span></div>
+            <div class="result-item">合計成功数: <span id="res-total-ok"></span></div>
+            <div class="result-item">合計ミス数: <span id="res-total-miss"></span></div>
+            <div class="result-item">入力精度: <span id="res-accuracy"></span></div>
+            <div class="result-item">キー入力の秒速: <span id="res-kps"></span></div>
+            <p class="instruction" style="margin-top: 30px;">ページをリロードして再プレイ</p>
+        </div>
+    </div>
+
+    <script>
+        // 単語辞書（中身は変更なし）
+        const wordDict = {
+            // "単語": "ふりがな", // 通常ローマ字表記: MKs(Minimum Keystrokes: キーを最低何回叩けば単語を入力できるか)
+
+            // "愛": "あい", // ai: 2
+            // "上": "うえ", // ue: 2
+            // "円": "えん", // en: 2
+            // "木": "き", // ki: 2
+            // "毛": "け", // ke: 2
+            // "酢": "す", // su: 2
+            // "手": "て", // te: 2
+            // "歯": "は", // ha: 2
+            // "目": "め", // me: 2
+            // "矢": "や", // ya: 2
+            // "湯": "ゆ", // yu: 2
+            "青": "あお", // ao: 2
+            "家": "いえ", // ie: 2
+            // --- total: 2 --- //
+
+            // "秋": "あき", // aki: 3
+            // "朝": "あさ", // asa: 3
+            // "足": "あし", // asi: 3
+            // "雨": "あめ", // ame: 3
+            // "池": "いけ", // ike: 3
+            // "椅子": "いす", // isu: 3
+            // "位置": "いち", // iti: 3
+            // "糸": "いと", // ito: 3
+            // "牛": "うし", // usi: 3
+            // "腕": "うで", // ude: 3
+            // "海": "うみ", // umi: 3
+            // "声": "こえ", // koe: 3
+            // "塩": "しお", // sio: 3
+            // "麺": "めん", // men: 3
+            "赤": "あか", // aka: 3
+            "石": "いし", // isi: 3
+            "岩": "いわ", // iwa: 3
+            "歌": "うた", // uta: 3
+            "駅": "えき", // eki: 3
+            "顔": "かお", // kao: 3
+            // --- total: 6 --- //
+
+            // "医者": "いしゃ", // isya: 4
+            // "お茶": "おちゃ", // otya: 4
+            // "風": "かぜ", // kaze: 4
+            // "川": "かわ", // kawa: 4
+            // "今日": "きょう", // kyou: 4
+            // "靴": "くつ", // kutu: 4
+            // "雲": "くも", // kumo: 4
+            // "午後": "ごご", // gogo: 4
+            // "米": "こめ", // kome: 4
+            // "月": "つき", // tuki: 4
+            // "夏": "なつ", // natu: 4
+            // "肉": "にく", // niku: 4
+            // "庭": "にわ", // niwa: 4
+            // "春": "はる", // haru: 4
+            // "冬": "ふゆ", // huyu: 4
+            // "風呂": "ふろ", // huro: 4
+            // "部屋": "へや", // heya: 4
+            // "星": "ほし", // hosi: 4
+            // "窓": "まど", // mado: 4
+            // "水": "みず", // mizu: 4
+            // "山": "やま", // yama: 4
+            // "雪": "ゆき", // yuki: 4
+            "映画": "えいが", // eiga: 4
+            "傘": "かさ", // kasa: 4
+            "空": "そら", // sora: 4
+            "地図": "ちず", // tizu: 4
+            "花": "はな", // hana: 4
+            "味噌": "みそ", // miso: 4
+            // --- total: 6 --- //
+
+            // "明日": "あした", // asita: 5
+            // "宴会": "えんかい", // enkai: 5
+            // "鞄": "かばん", // kaban: 5
+            // "切符": "きっぷ", // kippu: 5
+            // "午前": "ごぜん", // gozen: 5
+            // "財布": "さいふ", // saihu: 5
+            // "砂糖": "さとう", // satou: 5
+            // "試験": "しけん", // siken: 5
+            // "周囲": "しゅうい", // syuui: 5
+            // "図鑑": "ずかん", // zukan: 5
+            // "生徒": "せいと", // seito: 5
+            // "机": "つくえ", // tukue: 5
+            // "手紙": "てがみ", // denwa: 5
+            // "電子": "でんし", // densi: 5
+            // "時計": "とけい", // tokei: 5
+            // "土星": "どせい", // dosei: 5
+            // "帽子": "ぼうし", // bousi: 5
+            // "保険": "ほけん", // hoken: 5
+            // "温泉": "おんせん", // onsen: 5
+            "昨日": "きのう", // kinou: 5
+            "講師": "こうし", // kousi: 5
+            "数字": "すうじ", // suuzi: 5
+            "天使": "てんし", // tensi: 5
+            "豆腐": "とうふ", // touhu: 5
+            "野菜": "やさい", // yasai: 5
+            // --- total: 6 --- //
+
+            // "青空": "あおぞら", // aozora: 6
+            // "イヤホン": "いやほん", // iyahon: 6
+            // "学校": "がっこう", // gakkou: 6
+            // "教授": "きょうじゅ", // kyouju: 6
+            // "薬": "くすり", // kusuri: 6
+            // "玄関": "げんかん", // genkan: 6
+            // "珈琲": "こーひー", // ko-hi-: 6
+            // "魚": "さかな", // sakana: 6
+            // "砂丘": "さきゅう", // sakyuu: 6
+            // "写真": "しゃしん", // syasin: 6
+            // "先生": "せんせい", // sensei: 6
+            // "太陽": "たいよう", // taiyou: 6
+            // "ダンジョン": "だんじょん", // danjon: 6
+            "鉛筆": "えんぴつ", // enpitu: 6
+            "音楽": "おんがく", // ongaku: 6
+            "会社": "かいしゃ", // kaisya: 6
+            "海外": "かいがい", // kaigai: 6
+            "カメラ": "かめら", // kamera: 6
+            "桜": "さくら", // sakura: 6
+            "柔道": "じゅうどう", // juudou: 6
+            "醤油": "しょうゆ", // syouyu: 6
+            "信号": "しんごう", // singou: 6
+            "新聞": "しんぶん", // sinbun: 6
+            "深夜": "しんや", // sinnya: 6
+            "卵": "たまご", // tamago: 6
+            "テニス": "てにす", // tenisu: 6
+            "電車": "でんしゃ", // densya: 6
+            "ドローン": "どろーん", // doro-n: 6
+            "納豆": "なっとう", // nattou: 6
+            "荷物": "にもつ", // nimotu: 6
+            "病院": "びょういん", // byouin: 6
+            "眼鏡": "めがね", // megane: 6
+            "料理": "りょうり", // ryouri: 6
+            // --- total: 20 --- //
+
+            // "数学": "すうがく", // suugaku: 7
+            "火曜日": "かようび", // kayoubi: 7
+            "看護師": "かんごし", // kangosi: 7
+            "休憩": "きゅうけい", // kyuukei: 7
+            "筋トレ": "きんとれ", // kintore: 7
+            "クリーム": "くりーむ", // kuri-mu: 7
+            "ケーブル": "けーぶる", // ke-buru: 7
+            "交渉": "こうしょう", // kousyou: 7
+            "黒板": "こくばん", // kokuban: 7
+            "コミック": "こみっく", // komikku: 7
+            "寝室": "しんしつ", // sinsitu: 7
+            "掃除機": "そうじき", // soujiki: 7
+            "動物": "どうぶつ", // doubutu: 7
+            "土曜日": "どようび", // doyoubi: 7
+            "白菜": "はくさい", // hakusai: 7
+            "報告": "ほうこく", // houkoku: 7
+            "毎日": "まいにち", // mainiti; 7
+            "マンション": "まんしょん", // mansyon: 7
+            "ミキサー": "みきさー", // mikisa-: 7
+            "予備校": "よびこう", // yobikou: 7
+            "惑星": "わくせい", // wakusei: 7
+            // --- total: 20 --- //
+
+            // "イリュージョン": "いりゅーじょん", // iryu-jon: 8
+            // "加速度": "かそくど", // kasokudo: 8
+            // "乾電池": "かんでんち", // kandenti: 8
+            // "下駄箱": "げたばこ", // getabako: 8
+            // "サーキット": "さーきっと", // sa-kitto: 8
+            // "自転車": "じてんしゃ", // zitensya: 8
+            // "宿題": "しゅくだい", // syukudai: 8
+            // "正月": "しょうがつ", // syougatu: 8
+            // "除草剤": "じょそうざい", // josouzai: 8
+            // "図書館": "としょかん", // tosyokan: 8
+            // "友達": "ともだち", // tomodati: 8
+            // "日本酒": "にほんしゅ", // nihonsyu: 8
+            // "ハイタッチ": "はいたっち", // haitatti: 8
+            // "真ん中": "まんなか", // mannnaka: 8
+            // "夕食": "ゆうしょく", // yuusyoku: 8
+            // "冷蔵庫": "れいぞうこ", // reizouko: 8
+            "陰陽師": "おんみょうじ", // onmyouzi: 8
+            "ガーリック": "がーりっく", // ga-rikku: 8
+            "可能性": "かのうせい", // kanousei: 8
+            "休日": "きゅうじつ", // kyuujitu: 8
+            "牛乳": "ぎゅうにゅう", // gyuunyuu: 8
+            "果物": "くだもの", // kudamono: 8
+            "消しゴム": "けしごむ", // kesigomu: 8
+            "作曲": "さっきょく", // sakkyoku: 8
+            "週末": "しゅうまつ", // syuumatu: 8
+            "充電器": "じゅうでんき", // juudenki: 8
+            "司令塔": "しれいとう", // sireitou: 8
+            "水曜日": "すいようび", // suiyoubi: 8
+            "潜入": "せんにゅう", // sennnyuu: 8
+            "誕生日": "たんじょうび", // tanjoubi: 8
+            "バッテリー": "ばってりー", // batteri-: 8
+            "ビッグバン": "びっぐばん", // bigguban: 8
+            "ヘッドホン": "へっどほん", // heddohon: 8
+            "ボウリング": "ぼうりんぐ", // bouringu: 8
+            "保冷剤": "ほれいざい", // horeizai: 8
+            "冷凍庫": "れいとうこ", // reitouko: 8
+            // --- total: 20 --- //
+
+            // "子守唄": "こもりうた", // komoriuta: 9
+            // "時間割": "じかんわり", // zikanwari: 9
+            // "昼食": "ちゅうしょく", // tyuusyoku: 9
+            // "ナポリタン": "なぽりたん", // naporitan: 9
+            "インストール": "いんすとーる", // insuto-ru: 9
+            "カスタード": "かすたーど", // kasuta-do: 9
+            "教科書": "きょうかしょ", // kyoukasyo: 9
+            "金曜日": "きんようび", // kinnyoubi: 9
+            "クラシック": "くらしっく", // kurasikku: 9
+            "月曜日": "げつようび", // getuyoubi: 9
+            "光合成": "こうごうせい", // kougousei: 9
+            "最先端": "さいせんたん", // saisentan: 9
+            "水平線": "すいへいせん", // suiheisen: 9
+            "スフィンクス": "すふぃんくす", // sufinkusu: 9
+            "世界遺産": "せかいいさん", // sekaiisan: 9
+            "洗濯機": "せんたくき", // sentakuki: 9
+            "台所": "だいどころ", // daidokoro: 9
+            "中華街": "ちゅうかがい", // tyuukagai: 9
+            "朝食": "ちょうしょく", // tyousyoku: 9
+            "電話帳": "でんわちょう", // denwatyou: 9
+            "日曜日": "にちようび", // nitiyoubi: 9
+            "ネオンライト": "ねおんらいと", // neonraito: 9
+            "ミュージアム": "みゅーじあむ", // myu-ziamu: 9
+            "木曜日": "もくようび", // mokuyoubi: 9
+
+            "威風堂々": "いふうどうどう", // ihuudoudou: 10
+            "横断歩道": "おうだんほどう", // oudanhodou: 10
+            "オーバーヒート": "おーばーひーと", // o-ba-hi-to: 10
+            "皆勤賞": "かいきんしょう", // kaikinsyou: 10
+            "空集合": "くうしゅうごう", // kuusyuugou: 10
+            "栗きんとん": "くりきんとん", // kurikinton: 10
+            "コンクリート": "こんくりーと", // konkuri-to: 10
+            "コンピューター": "こんぴゅーたー", // konpyu-ta-: 10
+            "自動運転": "じどううんてん", // zidouunten: 10
+            "小学校": "しょうがっこう", // syougakkou: 10
+            "消防署": "しょうぼうしょ", // syoubousyo: 10
+            "情報量": "じょうほうりょう", // jouhouryou: 10
+            "小論文": "しょうろんぶん", // syouronbun: 10
+            "成人式": "せいじんしき", // seizinsiki: 10
+            "中学校": "ちゅうがっこう", // tyuugakkou: 10
+            "電子レンジ": "でんしれんじ", // densirenji: 10
+            "テントウムシ": "てんとうむし", // tentoumusi: 10
+            "バレーボール": "ばれーぼーる", // bare-bo-ru: 10
+            "目玉焼き": "めだまやき", // medamayaki: 10
+            "郵便物": "ゆうびんぶつ", // yuubinbutu: 10
+            // --- total: 20 --- //
+
+            "アイスブレイク": "あいすぶれいく", // aisubureiku: 11
+            "営業時間": "えいぎょうじかん", // eigyoujikan: 11
+            "影響力": "えいきょうりょく", // eikyouryoku: 11
+            "カスタネット": "かすたねっと", // kasutanetto: 11
+            "携帯電話": "けいたいでんわ", // keitaidenwa: 11
+            "サファリパーク": "さふぁりぱーく", // safaripa-ku: 11
+            "賞味期限": "しょうみきげん", // syoumikigen: 11
+            "接着剤": "せっちゃくざい", // settyakuzai: 11
+            "ソフトボール": "そふとぼーる", // sohutobo-ru: 11
+            "タイプライター": "たいぷらいたー", // taipuraita-: 11
+            "生クリーム": "なまくりーむ", // namakuri-mu: 11
+            "忍耐力": "にんたいりょく", // nintairyoku: 11
+            "ネットニュース": "ねっとにゅーす", // nettonyu-su: 11
+            "ホットミルク": "ほっとみるく", // hottomiruku: 11
+            "マッシュルーム": "まっしゅるーむ", // massyuru-mu: 11
+            "問題提起": "もんだいていき", // mondaiteiki: 11
+            "螺旋階段": "らせんかいだん", // rasenkaidan: 11
+            "冷蔵保存": "れいぞうほぞん", // reizouhozon: 11
+            "冷凍保存": "れいとうほぞん", // reitouhozon: 11
+            "ロックンロール": "ろっくんろーる", // rokkunro-ru: 11
+            // --- total: 20 --- //
+
+
+            "暗証番号": "あんしょうばんごう", // ansyoubangou: 12
+            "宇宙飛行士": "うちゅうひこうし", // utyuuhikousi: 12
+            "課外活動": "かがいかつどう", // kagaikatudou: 12
+            "キッチンペーパー": "きっちんぺーぱー", // kittinpe-pa-: 12
+            "クライマックス": "くらいまっくす", // kuraimakkusu: 12
+            "健康診断": "けんこうしんだん", // kenkousindan: 12
+            "公衆電話": "こうしゅうでんわ", // kousyuudenwa: 12
+            "高等学校": "こうとうがっこう", // koutougakkou: 12
+            "サンタクロース": "さんたくろーす", // santakuro-su: 12
+            "少年漫画": "しょうねんまんが", // syounenmanga: 12
+            "森羅万象": "しんらばんしょう", // sinrabansyou: 12
+            "成分表示": "せいぶんひょうじ", // seibunhyouji: 12
+            "戦国時代": "せんごくじだい", // sengokuzidai: 12
+            "チキン南蛮": "ちきんなんばん", // tikinnnanban: 12
+            "中華料理": "ちゅうかりょうり", // tyuukaryouri: 12
+            "調理実習": "ちょうりじっしゅう", // tyourizissyu: 12
+            "バランスボール": "ばらんすぼーる", // baransubo-ru: 12
+            "ポテトサラダ": "ぽてとさらだ", // potetosarada: 12
+            "留守番電話": "るすばんでんわ", // rusubandenwa: 12
+            "ロールキャベツ": "ろーるきゃべつ", // ro-rukyabetu: 12
+            // --- total: 20 --- //
+
+            // "地球温暖化": "ちきゅうおんだんか", // tikyuuondanka: 13
+            // "ティッシュペーパー": "てぃっしゅぺーぱー", // thissyupe-pa-: 13
+            // "プログラミング": "ぷろぐらみんぐ", // puroguramingu: 13
+            "公共事業": "こうきょうじぎょう", // koukyouzigyou: 13
+            "自動販売機": "じどうはんばいき", // zidouhanbaiki: 13
+            "新人研修": "しんじんけんしゅう", // sinzinkensyuu: 13
+            "先頭集団": "せんとうしゅうだん", // sentousyuudan: 13
+            "データマイニング": "でーたまいにんぐ", // de-tamainingu: 13
+            "リラクゼーション": "りらくぜーしょん", // rirakuze-syon: 13
+            // --- total: 6 --- //
+
+            "コミュニケーション": "こみゅにけーしょん", // komyunike-syon: 14
+            "クエスチョンマーク": "くえすちょんまーく", // kuesutyonma-ku: 14
+            "直射日光": "ちょくしゃにっこう", // tyokusyanikkou: 14
+            "ブラックボックス": "ぶらっくぼっくす", // burakkubokkusu: 14
+            "平行四辺形": "へいこうしへんけい", // heikousihenkei: 14
+            "木工用ボンド": "もっこうようぼんど", // mokkouyoubondo: 14
+            // --- total: 6 --- //
+
+            // "スイミングスクール": "すいみんぐすくーる", // suimingusuku-ru: 15
+            "インスタントコーヒー": "いんすたんとこーひー", // insutantoko-hi-: 15
+            "卒業証書": "そつぎょうしょうしょ", // sotugyousyousyo: 15
+            "伝統工芸品": "でんとうこうげいひん", // dentoukougeihin: 15
+            "日本国憲法": "にほんこくけんぽう", // nihonkokukenpou: 15
+            "文部科学省": "もんぶかがくしょう", // monbukagakusyou: 15
+            "ユーラシア大陸": "ゆーらしあたいりく", // yu-rasiatairiku: 15
+            // --- total: 6 --- //
+
+            // "イリオモテヤマネコ": "いりおもてやまねこ", // iriomoteyamaneko: 16
+            // "読書感想文": "どくしょかんそうぶん", // dokusyokansoubun: 16
+            "コンビニエンスストア": "こんびにえんすすとあ", // konbiniensusutoa: 16
+            "通信制大学": "つうしんせいだいがく", // tuusinseidaigaku: 16
+            // --- total: 2 --- //
+        };
+
+        // ローマ字変換パターン
+        let romajiPatterns = {
+            "い": ["i", "yi"],
+            "か": ["ka", "ca"], "く": ["ku", "cu", "qu"], "こ": ["ko", "co"],
+            "し": ["si", "shi", "ci"], "せ": ["se", "ce"],
+            "ち": ["ti", "chi"], "つ": ["tu", "tsu"],
+            "ふ": ["hu", "fu"],
+            "じ": ["zi", "ji"],
+            "きゃ": ["kya", "kixya", "kilya"], "きゅ": ["kyu", "kixyu", "kilyu"], "きょ": ["kyo", "kixyo", "kilyo"],
+            "ぎゃ": ["gya", "gixya", "gilya"], "ぎゅ": ["gyu", "gixyu", "gilyu"], "ぎょ": ["gyo", "gixyo", "gilyo"],
+            "にゃ": ["nya", "nixya", "nilya"], "にゅ": ["nyu", "nixyu", "nilyu"], "にょ": ["nyo", "nixyo", "nilyo"],
+            "ひゃ": ["hya", "hixya", "hilya"], "ひゅ": ["hyu", "hixyu", "hilyu"], "ひょ": ["hyo", "hixyo", "hilyo"],
+            "びゃ": ["bya", "bixya", "bilya"], "びゅ": ["byu", "bixyu", "bilyu"], "びょ": ["byo", "bixyo", "bilyo"],
+            "ぴゃ": ["pya", "pixya", "pilya"], "ぴゅ": ["pyu", "pixyu", "pilyu"], "ぴょ": ["pyo", "pixyo", "pilyo"],
+            "みゃ": ["mya", "mixya", "milya"], "みゅ": ["myu", "mixyu", "milyu"], "みょ": ["myo", "mixyo", "milyo"],
+            "りゃ": ["rya", "rixya", "rilya"], "りゅ": ["ryu", "rixyu", "rilyu"], "りょ": ["ryo", "rixyo", "rilyo"],
+            "しゃ": ["sya", "sha", "shixya", "shilya", "sixya", "silya", "cixya", "cilya"],
+            "しゅ": ["syu", "shu", "shixyu", "shilyu", "sixyu", "silyu", "cixyu", "cilyu"],
+            "しょ": ["syo", "sho", "shixyo", "shilyo", "sixyo", "silyo", "cixyo", "cilyo"],
+            "しぇ": ["sye", "she", "shixe", "shile", "sixe", "sile", "cixe", "cile"],
+            "じゃ": ["ja", "jya", "zya", "jixya", "jilya", "zixya", "zilya"],
+            "じゅ": ["ju", "jyu", "zyu", "jixyu", "jilyu", "zixyu", "zilyu"],
+            "じょ": ["jo", "jyo", "zyo", "jixyo", "jilyo", "zixyo", "zilyo"],
+            "じぇ": ["je", "jye", "zye", "jixe", "jile", "zixe", "zile"],
+            "ちゃ": ["tya", "cha", "cya", "chixya", "chiilya", "tixya", "tilya"],
+            "ちゅ": ["tyu", "chu", "cyu", "chixyu", "chiilyu", "tixyu", "tilyu"],
+            "ちょ": ["tyo", "cho", "cyo", "chixyo", "chiilyo", "tixyo", "tilyo"],
+            "ちぇ": ["tye", "che", "cye", "chixe", "chiile", "tixe", "tile"],
+            "うぃ": ["wi", "whi", "uxi", "uli", "uxyi", "ulyi"],
+            "うぇ": ["we", "whe", "uxe", "ule"],
+            "うぉ": ["who", "uxo", "ulo"],
+            "ふぁ": ["fa", "fwa", "fuxa", "fula", "huxa", "hula"],
+            "ふぃ": ["fi", "fwi", "fuxi", "fuli", "fuxyi", "fulyi", "huxi", "huli", "huxyi", "hulyi"],
+            "ふぇ": ["fe", "fwe", "fuxe", "fule", "huxe", "hule"],
+            "ふぉ": ["fo", "fwo", "fuxo", "fulo", "huxo", "hulo"],
+            "つぁ": ["tsa", "tsuxa", "tsula", "tuxa", "tula"],
+            "つぃ": ["tsi", "tsuxi", "tsuli", "tsuxyi", "tsulyi", "tuxi", "tuli", "tuxyi", "tulyi"],
+            "つぇ": ["tse", "tsuxe", "tsule", "tuxe", "tule"],
+            "つぉ": ["tso", "tsuxo", "tsulo", "tuxo", "tulo"],
+            "てぃ": ["thi", "texi", "teli", "texyi", "telyi"],
+            "とぅ": ["twu", "toxu", "tolu"],
+            "どぅ": ["dwu", "doxu", "dolu"],
+            "ん": ["n", "nn", "xn"],
+            "んあ": ["nna", "xna"], "んい": ["nni", "xni", "nnyi", "xnyi"], "んう": ["nnu", "xnu"], "んえ": ["nne", "xne"], "んお": ["nno", "xno"],
+            "んな": ["nnna", "xnna"], "んに": ["nnni", "xnni"], "んぬ": ["nnnu", "xnnu"], "んね": ["nnne", "xnne"], "んの": ["nnno", "xnno"],
+            "んや": ["nnya", "xnya"], "んゆ": ["nnyu", "xnyu"], "んよ": ["nnyo", "xnyo"],
+            "んにゃ": ["nnnya", "xnnya", "nnnixya", "xnnixya", "nnnilya", "xnnilya"],
+            "んにゅ": ["nnnyu", "xnnyu", "nnnixyu", "xnnixyu", "nnnilyu", "xnnilyu"],
+            "んにょ": ["nnnyo", "xnnyo", "nnnixyo", "xnnixyo", "nnnilyo", "xnnilyo"],
+        };
+
+        const basicRomaji = {
+            "あ": "a", "う": "u", "え": "e", "お": "o",
+            "き": "ki","け": "ke",
+            "さ": "sa", "す": "su", "そ": "so",
+            "た": "ta", "て": "te", "と": "to",
+            "な": "na", "に": "ni", "ぬ": "nu", "ね": "ne", "の": "no",
+            "は": "ha", "ひ": "hi", "へ": "he", "ほ": "ho",
+            "ま": "ma", "み": "mi", "む": "mu", "め": "me", "も": "mo",
+            "や": "ya", "ゆ": "yu", "よ": "yo",
+            "ら": "ra", "り": "ri", "る": "ru", "れ": "re", "ろ": "ro",
+            "わ": "wa", "を": "wo",
+            "ゔ": "vu",
+            "が": "ga", "ぎ": "gi", "ぐ": "gu", "げ": "ge", "ご": "go",
+            "ざ": "za", "ず": "zu", "ぜ": "ze", "ぞ": "zo",
+            "だ": "da", "ぢ": "di", "で": "de", "ど": "do",
+            "ば": "ba", "び": "bi", "ぶ": "bu", "べ": "be", "ぼ": "bo",
+            "ぱ": "pa", "ぴ": "pi", "ぷ": "pu", "ぺ": "pe", "ぽ": "po",
+            "ー": "-",
+        };
+
+        // ゲーム状態
+        let gameState = {
+            screen: 'title',
+            // 時間制限・ポイント・ランク関連の変数を削除
+            currentWord: '',
+            currentHiragana: '',
+            currentRomaji: [],
+            currentRomajiDisplay: '',
+            currentIndex: 0,
+            possibleInputs: [],
+            
+            // 新しい統計情報
+            totalSuccess: 0, // ゲーム開始からの累計成功数
+            totalMiss: 0,    // ゲーム開始からの累計ミス数
+            sessionSuccess: 0, // 現在の60秒セッション内の成功数
+            sessionMiss: 0,    // 現在の60秒セッション内のミス数
+            
+            startTime: 0,
+            logCount: 0,
+            userConfig: {},
+            cooldown: false,
+            hiraganaMapping: []
+        };
+
+        // 画面要素
+        const screens = {
+            title: document.getElementById('title-screen'),
+            countdown: document.getElementById('countdown-screen'),
+            game: document.getElementById('game-screen'),
+            result: document.getElementById('result-screen')
+        };
+        
+        // UI要素
+        const uiLeft = document.getElementById('game-ui-left');
+        const uiRight = document.getElementById('game-ui-right');
+
+        function switchScreen(screenName) {
+            Object.values(screens).forEach(s => s.classList.remove('active'));
+            screens[screenName].classList.add('active');
+            gameState.screen = screenName;
+
+            // ゲームUIの表示切り替え
+            if (screenName === 'game') {
+                uiLeft.style.display = 'block';
+                uiRight.style.display = 'block';
+            } else {
+                uiLeft.style.display = 'none';
+                uiRight.style.display = 'none';
+            }
+        }
+
+        function loadConfig() {
+            gameState.userConfig = {
+                "し": document.getElementById('config-shi').value,
+                "ち": document.getElementById('config-chi').value,
+                "つ": document.getElementById('config-tsu').value,
+                "ふ": document.getElementById('config-fu').value,
+                "じ": document.getElementById('config-ji').value
+            };
+        }
+
+        function hiraganaToRomaji(hiragana) {
+            let result = [];
+            let mapping = [];
+            let i = 0;
+            let hiraganaIndex = 0;
+            
+            while (i < hiragana.length) {
+                let found = false;
+                
+                // 促音チェック
+                if (hiragana[i] === 'っ' && i + 1 < hiragana.length) {
+                    let nextChar = hiragana[i + 1];
+                    let nextPatterns = [];
+                    
+                    if (i + 2 < hiragana.length) {
+                        let two = hiragana.substring(i + 1, i + 3);
+                        if (romajiPatterns[two]) {
+                            nextPatterns = romajiPatterns[two];
+                        } else if (basicRomaji[two]) {
+                            nextPatterns = [basicRomaji[two]];
+                        }
+                    }
+                    
+                    if (nextPatterns.length === 0) {
+                        if (romajiPatterns[nextChar]) {
+                            nextPatterns = romajiPatterns[nextChar];
+                        } else if (basicRomaji[nextChar]) {
+                            nextPatterns = [basicRomaji[nextChar]];
+                        }
+                    }
+                    
+                    if (nextPatterns.length > 0) {
+                        let consonants = [];
+                        for (let pattern of nextPatterns) {
+                            let consonant = pattern[0];
+                            if (!consonants.includes(consonant)) {
+                                consonants.push(consonant);
+                            }
+                        }
+                        result.push([consonants]);
+                        mapping.push(hiraganaIndex);
+                        i++;
+                        hiraganaIndex++;
+                        found = true;
+                    }
+                }
+                
+                if (!found && i + 2 < hiragana.length) {
+                    let three = hiragana.substring(i, i + 3);
+                    if (romajiPatterns[three] || basicRomaji[three]) {
+                        let patterns = romajiPatterns[three] || [basicRomaji[three]];
+                        result.push([patterns]);
+                        mapping.push(hiraganaIndex);
+                        i += 3;
+                        hiraganaIndex += 3;
+                        found = true;
+                    }
+                }
+                
+                if (!found && i + 1 < hiragana.length) {
+                    let two = hiragana.substring(i, i + 2);
+                    if (romajiPatterns[two] || basicRomaji[two]) {
+                        let patterns = romajiPatterns[two] || [basicRomaji[two]];
+                        result.push([patterns]);
+                        mapping.push(hiraganaIndex);
+                        i += 2;
+                        hiraganaIndex += 2;
+                        found = true;
+                    }
+                }
+                
+                if (!found) {
+                    let one = hiragana[i];
+                    if (romajiPatterns[one] || basicRomaji[one]) {
+                        let patterns = romajiPatterns[one] || [basicRomaji[one]];
+                        result.push([patterns]);
+                        mapping.push(hiraganaIndex);
+                    }
+                    i++;
+                    hiraganaIndex++;
+                }
+            }
+            
+            return {romaji: result, mapping: mapping};
+        }
+
+        function getDisplayRomaji(romajiArray) {
+            let result = '';
+            for (let patterns of romajiArray) {
+                let chosen = patterns[0][0];
+                for (let patternGroup of patterns) {
+                    for (let pattern of patternGroup) {
+                        for (let key in gameState.userConfig) {
+                            if (pattern === gameState.userConfig[key]) {
+                                chosen = pattern;
+                                break;
+                            }
+                        }
+                    }
+                }
+                result += chosen;
+            }
+            return result;
+        }
+
+        function generatePossibleInputs(romajiArray, index) {
+            if (index >= romajiArray.length) {
+                return [''];
+            }
+            
+            let current = romajiArray[index];
+            let rest = generatePossibleInputs(romajiArray, index + 1);
+            let results = [];
+            
+            for (let patternGroup of current) {
+                for (let pattern of patternGroup) {
+                    for (let r of rest) {
+                        results.push(pattern + r);
+                    }
+                }
+            }
+            
+            return results;
+        }
+
+        function nextWord() {
+            const words = Object.entries(wordDict);
+
+            let availableWords = words;
+            if (gameState.previousWord && words.length > 1) {
+                availableWords = words.filter(([kanji, _]) => kanji !== gameState.previousWord);
+            }
+            
+            const [kanji, hiragana] = availableWords[Math.floor(Math.random() * availableWords.length)];
+            
+            gameState.previousWord = kanji;
+            gameState.currentWord = kanji;
+            gameState.currentHiragana = hiragana;
+            const converted = hiraganaToRomaji(hiragana);
+            gameState.currentRomaji = converted.romaji;
+            gameState.hiraganaMapping = converted.mapping;
+            gameState.currentRomajiDisplay = getDisplayRomaji(gameState.currentRomaji);
+            gameState.currentIndex = 0;
+            gameState.possibleInputs = generatePossibleInputs(gameState.currentRomaji, 0);
+            gameState.cooldown = false;
+            
+            document.getElementById('kanji').textContent = kanji;
+            document.getElementById('kanji').classList.remove('complete');
+            updateHiraganaDisplay();
+            updateRomajiDisplay();
+        }
+        
+        function updateHiraganaDisplay() {
+            const hiraganaEl = document.getElementById('hiragana');
+            hiraganaEl.innerHTML = '';
+            
+            let completedHiraganaIndex = -1;
+            
+            if (gameState.currentIndex >= gameState.currentRomajiDisplay.length) {
+                completedHiraganaIndex = gameState.currentHiragana.length - 1;
+            } else {
+                for (let i = 0; i < gameState.currentRomaji.length; i++) {
+                    let romajiLength = 0;
+                    for (let j = 0; j <= i; j++) {
+                        romajiLength += getDisplayRomaji([gameState.currentRomaji[j]]).length;
+                    }
+                    if (romajiLength <= gameState.currentIndex) {
+                        completedHiraganaIndex = gameState.hiraganaMapping[i];
+                    }
+                }
+            }
+            
+            for (let i = 0; i < gameState.currentHiragana.length; i++) {
+                const span = document.createElement('span');
+                span.className = 'char';
+                span.textContent = gameState.currentHiragana[i];
+                if (i <= completedHiraganaIndex) {
+                    span.classList.add('correct');
+                }
+                hiraganaEl.appendChild(span);
+            }
+        }
+
+        function updateRomajiDisplay() {
+            const romajiEl = document.getElementById('romaji');
+            romajiEl.innerHTML = '';
+            
+            for (let i = 0; i < gameState.currentRomajiDisplay.length; i++) {
+                const span = document.createElement('span');
+                span.className = 'char';
+                span.textContent = gameState.currentRomajiDisplay[i];
+                if (i < gameState.currentIndex || gameState.currentIndex >= gameState.currentRomajiDisplay.length) {
+                    span.classList.add('correct');
+                }
+                romajiEl.appendChild(span);
+            }
+        }
+
+        function handleKeyPress(key) {
+            if (gameState.screen !== 'game' || gameState.cooldown) return;
+            
+            const currentInput = gameState.currentRomajiDisplay.substring(0, gameState.currentIndex) + key;
+            let validInput = false;
+            let newDisplay = null;
+            
+            for (let possible of gameState.possibleInputs) {
+                if (possible.startsWith(currentInput)) {
+                    validInput = true;
+                    if (currentInput.length < gameState.currentRomajiDisplay.length && 
+                        possible[currentInput.length - 1] !== gameState.currentRomajiDisplay[currentInput.length - 1]) {
+                        newDisplay = possible;
+                    }
+                    break;
+                }
+            }
+            
+            const charEl = document.getElementById('romaji').children[gameState.currentIndex];
+            
+            if (validInput) {
+                if (newDisplay) {
+                    gameState.currentRomajiDisplay = newDisplay;
+                }
+                
+                charEl.classList.add('correct');
+                charEl.classList.remove('incorrect');
+                gameState.currentIndex++;
+                
+                // 成功数のカウント加算
+                gameState.totalSuccess++;
+                gameState.sessionSuccess++;
+                
+                updateHiraganaDisplay();
+                
+                if (gameState.currentIndex >= gameState.currentRomajiDisplay.length) {
+                    gameState.cooldown = true;
+                    document.getElementById('kanji').classList.add('complete');
+                    updateHiraganaDisplay();
+                    updateRomajiDisplay();
+                    setTimeout(() => nextWord(), 300);
+                } else {
+                    updateRomajiDisplay();
+                }
+            } else {
+                charEl.classList.add('incorrect');
+                setTimeout(() => {
+                    charEl.classList.remove('incorrect');
+                }, 200);
+                
+                // ミス数のカウント加算
+                gameState.totalMiss++;
+                gameState.sessionMiss++;
+            }
+            
+            updateStatsDisplay();
+        }
+
+        // 統計情報の更新（右上UI）
+        function updateStatsDisplay() {
+            document.getElementById('session-ok').textContent = gameState.sessionSuccess;
+            document.getElementById('session-miss').textContent = gameState.sessionMiss;
+        }
+
+        // 時間表示の更新（左上UI）
+        function updateTimeDisplay(elapsedMs) {
+            const totalSeconds = Math.floor(elapsedMs / 1000);
+            const m = Math.floor(totalSeconds / 60);
+            const s = totalSeconds % 60;
+            const timeStr = `${m.toString().padStart(2, '0')}分${s.toString().padStart(2, '0')}秒`;
+            document.getElementById('elapsed-time').textContent = timeStr;
+        }
+
+        function startCountdown() {
+            loadConfig();
+            switchScreen('countdown');
+            let count = 3;
+            document.getElementById('countdown').textContent = count;
+            
+            const interval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    document.getElementById('countdown').textContent = count;
+                } else {
+                    clearInterval(interval);
+                    startGame();
+                }
+            }, 1000);
+        }
+
+        function startGame() {
+            switchScreen('game');
+            
+            // 初期化
+            gameState.totalSuccess = 0;
+            gameState.totalMiss = 0;
+            gameState.sessionSuccess = 0;
+            gameState.sessionMiss = 0;
+            gameState.startTime = Date.now();
+            gameState.logCount = 0;
+            
+            // ログのクリア
+            document.getElementById('log-container').innerHTML = '';
+            
+            updateStatsDisplay();
+            updateTimeDisplay(0);
+            
+            nextWord();
+            gameLoop();
+        }
+
+        function gameLoop() {
+            if (gameState.screen !== 'game') return;
+            
+            const now = Date.now();
+            const elapsed = now - gameState.startTime;
+            
+            updateTimeDisplay(elapsed);
+
+            // 60秒ごとのログ処理
+            const nextLogTime = (gameState.logCount + 1) * 60000;
+            if (elapsed >= nextLogTime) {
+                addLogEntry();
+                gameState.logCount++;
+                // セッションカウンターのリセット
+                gameState.sessionSuccess = 0;
+                gameState.sessionMiss = 0;
+                updateStatsDisplay();
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        function addLogEntry() {
+            const container = document.getElementById('log-container');
+            const div = document.createElement('div');
+            div.className = 'log-entry';
+            div.textContent = `OK:${gameState.sessionSuccess}, MISS:${gameState.sessionMiss}`;
+            container.appendChild(div);
+        }
+
+        function endGame() {
+            switchScreen('result');
+            const durationSec = (Date.now() - gameState.startTime) / 1000;
+            const totalInputs = gameState.totalSuccess + gameState.totalMiss;
+            
+            // 入力精度計算: 100 * 成功 / (成功+ミス)
+            let accuracy = 0;
+            if (totalInputs > 0) {
+                accuracy = (100 * gameState.totalSuccess / totalInputs).toFixed(1);
+            }
+            
+            // 秒速: 成功数 / 時間
+            const kps = (gameState.totalSuccess / durationSec).toFixed(1);
+
+            // 経過時間整形
+            const m = Math.floor(durationSec / 60);
+            const s = Math.floor(durationSec % 60);
+            const timeStr = `${m}分${s}秒`;
+
+            document.getElementById('res-time').textContent = timeStr;
+            document.getElementById('res-total-ok').textContent = gameState.totalSuccess;
+            document.getElementById('res-total-miss').textContent = gameState.totalMiss;
+            document.getElementById('res-accuracy').textContent = accuracy + "%";
+            document.getElementById('res-kps').textContent = kps;
+        }
+
+        // スペースキー長押し判定用
+        let spacePressTimer = null;
+
+        document.addEventListener('keydown', (e) => {
+            if (gameState.screen === 'title' && e.code === 'Space') {
+                e.preventDefault();
+                startCountdown();
+            } else if (gameState.screen === 'game') {
+                if (e.code === 'Space') {
+                    // スペース長押しでリザルトへ (3秒)
+                    if (!spacePressTimer && !e.repeat) {
+                        spacePressTimer = setTimeout(() => {
+                            endGame();
+                        }, 3000);
+                    }
+                } else if (e.key.length === 1 && e.key.match(/[a-z\-]/i)) {
+                    e.preventDefault();
+                    handleKeyPress(e.key.toLowerCase());
+                }
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.code === 'Space') {
+                if (spacePressTimer) {
+                    clearTimeout(spacePressTimer);
+                    spacePressTimer = null;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
