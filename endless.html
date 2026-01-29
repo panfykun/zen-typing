@@ -566,7 +566,7 @@
 
         // ローマ字変換パターン
         let romajiPatterns = {
-            "い": ["i", "yi"],
+            "い": ["i", "yi"],　"う": ["u", "wu", "whu"],
             "か": ["ka", "ca"], "く": ["ku", "cu", "qu"], "こ": ["ko", "co"],
             "し": ["si", "shi", "ci"], "せ": ["se", "ce"],
             "ち": ["ti", "chi"], "つ": ["tu", "tsu"],
@@ -616,7 +616,7 @@
         };
 
         const basicRomaji = {
-            "あ": "a", "う": "u", "え": "e", "お": "o",
+            "あ": "a", "え": "e", "お": "o",
             "き": "ki","け": "ke",
             "さ": "sa", "す": "su", "そ": "so",
             "た": "ta", "て": "te", "と": "to",
@@ -735,7 +735,7 @@
                                 consonants.push(consonant);
                             }
                         }
-                        result.push([consonants]);
+                        result.push([consonants, ['xtu', 'ltu', 'xtsu', 'ltsu']]);
                         mapping.push(hiraganaIndex);
                         i++;
                         hiraganaIndex++;
