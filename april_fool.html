@@ -203,30 +203,30 @@
 
         // ランク定義 (点数の高い順)
         const rankData = [
-            { name: "レジェンド", score: 700 },
-            { name: "ダイヤ4", score: 655 },
-            { name: "ダイヤ3", score: 625 },
-            { name: "ダイヤ2", score: 580 },
-            { name: "ダイヤ1", score: 550 },
-            { name: "プラチナ4", score: 525 },
-            { name: "プラチナ3", score: 500 },
-            { name: "プラチナ2", score: 475 },
-            { name: "プラチナ1", score: 450 },
-            { name: "ゴールド4", score: 425 },
-            { name: "ゴールド3", score: 400 },
-            { name: "ゴールド2", score: 375 },
-            { name: "ゴールド1", score: 350 },
-            { name: "シルバー4", score: 325 },
-            { name: "シルバー3", score: 300 },
-            { name: "シルバー2", score: 275 },
-            { name: "シルバー1", score: 250 },
-            { name: "ブロンズ4", score: 225 },
-            { name: "ブロンズ3", score: 200 },
-            { name: "ブロンズ2", score: 175 },
-            { name: "ブロンズ1", score: 150 },
-            { name: "ビギナー3", score: 100 },
-            { name: "ビギナー2", score: 50 },
-            { name: "ビギナー1", score: 1 }
+            { name: "れじぇんど", score: 700 },
+            { name: "だいや4", score: 655 },
+            { name: "だいや3", score: 625 },
+            { name: "だいや2", score: 580 },
+            { name: "だいや1", score: 550 },
+            { name: "ぷらちな4", score: 525 },
+            { name: "ぷらちな3", score: 500 },
+            { name: "ぷらちな2", score: 475 },
+            { name: "ぷらちな1", score: 450 },
+            { name: "ごぉるど4", score: 425 },
+            { name: "ごぉるど3", score: 400 },
+            { name: "ごぉるど2", score: 375 },
+            { name: "ごぉるど1", score: 350 },
+            { name: "しるばぁ4", score: 325 },
+            { name: "しるばぁ3", score: 300 },
+            { name: "しるばぁ2", score: 275 },
+            { name: "しるばぁ1", score: 250 },
+            { name: "ぶろんず4", score: 225 },
+            { name: "ぶろんず3", score: 200 },
+            { name: "ぶろんず2", score: 175 },
+            { name: "ぶろんず1", score: 150 },
+            { name: "びぎなぁ3", score: 100 },
+            { name: "びぎなぁ2", score: 50 },
+            { name: "びぎなぁ1", score: 1 }
         ];
 
         // 単語辞書
@@ -1007,7 +1007,7 @@
             document.getElementById('miss-count').textContent = gameState.missCount;
 
             // ランク計算
-            let currentRank = "ビギナー0";
+            let currentRank = "がんばりましょぉ";
             for (const rank of rankData) {
                 if (gameState.points >= rank.score) {
                     currentRank = rank.name;
@@ -1019,25 +1019,25 @@
             rankEl.textContent = currentRank;
             
             // ランクに応じて色を変える演出（簡易）
-            if (currentRank === "レジェンド") {
+            if (currentRank === "れじぇんど") {
                 rankEl.style.color = "#FF4500"; // オレンジレッド
                 rankEl.style.textShadow = "0 0 20px rgba(255, 69, 0, 0.8)";
-            } else if (currentRank.includes("ダイヤ")) {
+            } else if (currentRank.includes("だいや")) {
                 rankEl.style.color = "#00BFFF"; // ディープスカイブルー
                 rankEl.style.textShadow = "0 0 15px rgba(0, 191, 255, 0.6)";
-            } else if (currentRank.includes("プラチナ")) {
+            } else if (currentRank.includes("ぷらちな")) {
                 // 青白
                 rankEl.style.color = "#E0FFFF"; // LightCyan
                 rankEl.style.textShadow = "0 0 15px rgba(224, 255, 255, 0.8)";
-            } else if (currentRank.includes("ゴールド")) {
+            } else if (currentRank.includes("ごぉるど")) {
                 // 金色
                 rankEl.style.color = "#FFD700"; // Gold
                 rankEl.style.textShadow = "0 0 15px rgba(255, 215, 0, 0.6)";
-            } else if (currentRank.includes("シルバー")) {
+            } else if (currentRank.includes("しるばぁ")) {
                 // 銀色
                 rankEl.style.color = "#C0C0C0"; // Silver
                 rankEl.style.textShadow = "0 0 15px rgba(192, 192, 192, 0.6)";
-            } else if (currentRank.includes("ブロンズ")) {
+            } else if (currentRank.includes("ぶろんず")) {
                 // 銅色
                 rankEl.style.color = "#CD7F32"; // Bronze
                 rankEl.style.textShadow = "0 0 15px rgba(205, 127, 50, 0.6)";
